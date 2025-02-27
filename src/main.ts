@@ -28,11 +28,12 @@ server.on("connection", (conn: engine.Socket) => {
         case "session": {
           const { session_id } = message;
           assert(typeof session_id === "string");
-          const session = session_cache.get(session_id);
+          assert(!session);
+          session = session_cache.get(session_id);
           if (session) {
             session.set_connection(conn);
           } else {
-            const session = new Session(session_id);
+            session = new Session(session_id);
             session_cache.set(session_id, session);
             session.set_connection(conn);
           }
@@ -42,5 +43,20 @@ server.on("connection", (conn: engine.Socket) => {
           throw new Error(`unknown message type: ${message.type}`);
       }
     });
+  });
+  conn.on("close", () => {
+    console.log(`connection closed`);
+    if (session) {
+      const now = Date.now();
+      session.connection_closed(now);
+      setTimeout(() => {
+        assert(session);
+        const closed = session.closed_time();
+        if (closed === now) {
+          session_cache.delete(session.get_session_id());
+          session.terminate();
+        }
+      }, 10 * 60 * 1000);
+    }
   });
 });
