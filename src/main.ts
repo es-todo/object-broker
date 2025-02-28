@@ -25,10 +25,17 @@ server.on("connection", (conn: engine.Socket) => {
           conn.send(JSON.stringify([{ type: "ack", i }]));
           return;
         }
+        case "ack": {
+          const { i } = message;
+          assert(typeof i === "number");
+          assert(session !== undefined);
+          session.ack_received(i);
+          return;
+        }
         case "session": {
           const { session_id } = message;
           assert(typeof session_id === "string");
-          assert(!session);
+          //assert(session === undefined);
           session = session_cache.get(session_id);
           if (session) {
             session.set_connection(conn);

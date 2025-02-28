@@ -1,26 +1,46 @@
 import { Socket } from "engine.io";
 import assert from "node:assert";
 
-type message = { type: "session"; is_new: boolean };
+type message =
+  | { type: "session"; is_new: boolean }
+  | { type: "syn"; i: number };
 
 export class Session {
   private session_id: string;
   private connection: Socket | undefined = undefined;
   private closed: number | undefined;
+  private message_queue: message[] = [];
+  private sent_messages: message[] = [];
+  private syn: number = 0;
 
   constructor(session_id: string) {
     this.session_id = session_id;
   }
 
   private send(message: message) {
-    console.log(message);
-    console.log("todo sending");
+    if (this.message_queue.length === 0) {
+      setTimeout(() => this.flush_queue(), 0);
+    }
+    this.message_queue.push(message);
+  }
+
+  private flush_queue() {
+    if (this.closed || this.message_queue.length === 0) return;
+    this.message_queue.push({ type: "syn", i: this.syn });
+    this.syn += 1;
+    assert(this.connection);
+    this.connection.send(JSON.stringify(this.message_queue));
+    this.sent_messages = [...this.sent_messages, ...this.message_queue];
+    this.message_queue = [];
   }
 
   public set_connection(connection: Socket) {
     const old_connection = this.connection;
     this.connection = connection;
     this.closed = undefined;
+    if (this.sent_messages.length > 0) {
+      connection.send(JSON.stringify(this.sent_messages));
+    }
     this.send({ type: "session", is_new: !old_connection });
   }
 
@@ -28,6 +48,14 @@ export class Session {
     assert(this.connection);
     assert(this.closed === undefined);
     this.closed = now;
+  }
+
+  public ack_received(i: number) {
+    const idx = this.sent_messages.findIndex(
+      (x) => x.type === "syn" && x.i === i
+    );
+    assert(idx !== -1);
+    this.sent_messages.splice(0, idx + 1);
   }
 
   public closed_time() {
