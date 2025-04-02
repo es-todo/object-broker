@@ -1,12 +1,24 @@
 import * as engine from "engine.io";
 import assert from "node:assert";
 import { Session } from "./session.ts";
+import { CommandChannel } from "./command-channel.ts";
+import { issue_command } from "./issue-command.ts";
 
 const server = engine.listen(3000, {}, () => {
   console.log("engine listening on 3000");
 });
 
 const session_cache: Map<string, Session> = new Map();
+
+const command_channels: Map<string, CommandChannel> = new Map();
+
+const get_command_channel_by_id = (command_uuid: string) => {
+  const existing = command_channels.get(command_uuid);
+  if (existing) return existing;
+  const channel = new CommandChannel();
+  command_channels.set(command_uuid, channel);
+  return channel;
+};
 
 server.on("connection", (conn: engine.Socket) => {
   console.log(`connection!`);
@@ -44,6 +56,16 @@ server.on("connection", (conn: engine.Socket) => {
             session_cache.set(session_id, session);
             session.set_connection(conn);
           }
+          return;
+        }
+        case "command": {
+          const { command_uuid, command_type, command_data } = message;
+          assert(typeof command_uuid === "string");
+          assert(typeof command_type === "string");
+          assert(session !== undefined);
+          const command_channel = get_command_channel_by_id(command_uuid);
+          command_channel.add_subscriber(session);
+          issue_command({ command_uuid, command_type, command_data });
           return;
         }
         default:
