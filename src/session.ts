@@ -1,8 +1,14 @@
 import { Socket } from "engine.io";
 import assert from "node:assert";
+import { type command_status } from "./command-status.ts";
 
 type message =
   | { type: "session"; is_new: boolean }
+  | {
+      type: "command_status";
+      command_uuid: string;
+      status: command_status["type"];
+    }
   | { type: "syn"; i: number };
 
 export class Session {
@@ -22,6 +28,14 @@ export class Session {
       setTimeout(() => this.flush_queue(), 0);
     }
     this.message_queue.push(message);
+  }
+
+  public notify_command_status(status: command_status) {
+    this.send({
+      type: "command_status",
+      command_uuid: status.command_uuid,
+      status: status.type,
+    });
   }
 
   private flush_queue() {
