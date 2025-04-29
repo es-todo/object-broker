@@ -9,6 +9,10 @@ type message =
       command_uuid: string;
       status: command_status["type"];
     }
+  | {
+      type: "rev";
+      rev: { t: number; i: number; type: string; id: string; data: any };
+    }
   | { type: "syn"; i: number };
 
 export class Session {
@@ -35,6 +39,19 @@ export class Session {
       type: "command_status",
       command_uuid: status.command_uuid,
       status: status.type,
+    });
+  }
+
+  public notify_object_status(
+    type: string,
+    id: string,
+    t: number,
+    i: number,
+    data: any
+  ) {
+    this.send({
+      type: "rev",
+      rev: { type, id, t, i, data },
     });
   }
 

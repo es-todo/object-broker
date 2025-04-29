@@ -1,19 +1,8 @@
 import axios from "axios";
-import { sleep } from "./sleep.ts";
 import assert from "node:assert";
 import { CommandChannelManager } from "./command-channel-manager.ts";
 import { type command_status } from "./command-status.ts";
-
-async function forever<T>(f: () => Promise<T>): Promise<T> {
-  while (true) {
-    try {
-      return await f();
-    } catch (error) {
-      console.error(error);
-      await sleep(100);
-    }
-  }
-}
+import { forever } from "./forever.ts";
 
 async function fetch_status_t(): Promise<number> {
   return forever(async () => {
