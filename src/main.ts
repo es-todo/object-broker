@@ -5,6 +5,11 @@ import { issue_command } from "./issue-command.ts";
 import { init_command_poller } from "./command-poller.ts";
 import { CommandChannelManager } from "./command-channel-manager.ts";
 import { ObjectChannelManager } from "./object-channel-manager.ts";
+import { create_sign } from "./signing.ts";
+import { readFileSync } from "node:fs";
+
+const sign = create_sign(readFileSync("private.pem", { encoding: "utf8" }));
+console.log(sign("hello"));
 
 const server = engine.listen(3000, {}, () => {
   console.log("engine listening on 3000");
