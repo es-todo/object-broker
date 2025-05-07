@@ -2,6 +2,8 @@ import { Socket } from "engine.io";
 import assert from "node:assert";
 import { type command_status } from "./command-status.ts";
 
+type credentials = { user_id: string; password: string };
+
 type message =
   | { type: "session"; is_new: boolean }
   | {
@@ -13,6 +15,7 @@ type message =
       type: "rev";
       rev: { t: number; i: number; type: string; id: string; data: any };
     }
+  | { type: "auth"; user_id: string }
   | { type: "syn"; i: number };
 
 export class Session {
@@ -22,6 +25,7 @@ export class Session {
   private message_queue: message[] = [];
   private sent_messages: message[] = [];
   private syn: number = 0;
+  private credentials: credentials | undefined;
 
   constructor(session_id: string) {
     this.session_id = session_id;
@@ -99,5 +103,10 @@ export class Session {
 
   public terminate() {
     console.log(`todo: terminate`);
+  }
+
+  public set_credentials(credentials: credentials) {
+    this.credentials = credentials;
+    this.send({ type: "auth", user_id: credentials.user_id });
   }
 }

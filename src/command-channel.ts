@@ -1,15 +1,16 @@
 import { type command_status } from "./command-status.ts";
-import { Session } from "./session.ts";
+
+type subscriber = (status: command_status) => void;
 
 export class CommandChannel {
-  private sessions: Set<Session> = new Set();
+  private subscribers: Set<subscriber> = new Set();
 
-  add_subscriber(session: Session) {
-    this.sessions.add(session);
+  add_subscriber(f: subscriber) {
+    this.subscribers.add(f);
   }
 
   update_status(data: command_status) {
-    this.sessions.forEach((session) => session.notify_command_status(data));
+    this.subscribers.forEach((f) => f(data));
     console.log(data);
   }
 }

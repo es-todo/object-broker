@@ -67,9 +67,35 @@ server.on("connection", (conn: engine.Socket) => {
           assert(session !== undefined);
           const command_channel =
             command_channel_manager.get_command_channel_by_id(command_uuid);
-          command_channel.add_subscriber(session);
+          command_channel.add_subscriber((d) =>
+            session?.notify_command_status(d)
+          );
           issue_command({ command_uuid, command_type, command_data });
           return;
+        }
+        case "register": {
+          const { command_uuid, user_id, email, password } = message;
+          assert(typeof command_uuid === "string");
+          assert(typeof user_id === "string");
+          assert(typeof password === "string");
+          const command_channel =
+            command_channel_manager.get_command_channel_by_id(command_uuid);
+          assert(session !== undefined);
+          command_channel.add_subscriber((status) => {
+            session?.notify_command_status(status);
+            if (status.type === "succeeded") {
+              session?.set_credentials({ user_id, password });
+            }
+          });
+          issue_command({
+            command_uuid,
+            command_type: "register",
+            command_data: {
+              user_id,
+              email,
+              password: gen_password(password),
+            },
+          });
         }
         case "fetch": {
           console.log(message);
