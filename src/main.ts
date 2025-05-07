@@ -7,6 +7,7 @@ import { CommandChannelManager } from "./command-channel-manager.ts";
 import { ObjectChannelManager } from "./object-channel-manager.ts";
 import { create_sign } from "./signing.ts";
 import { readFileSync } from "node:fs";
+import { gen_password, verify_password } from "./crypto.ts";
 
 const sign = create_sign(readFileSync("private.pem", { encoding: "utf8" }));
 console.log(sign("hello"));
@@ -106,3 +107,20 @@ server.on("connection", (conn: engine.Socket) => {
 });
 
 init_command_poller(command_channel_manager);
+
+function test() {
+  const t0 = Date.now();
+  const hashed = gen_password("mypass");
+  const verified = verify_password("mypass", hashed);
+  assert(verified === true);
+  const t1 = Date.now();
+  verify_password("mypass", hashed);
+  const t2 = Date.now();
+  console.log({
+    hashed,
+    verified,
+    time1: `${t1 - t0}ms`,
+    time2: `${t2 - t1}ms`,
+  });
+}
+test();
