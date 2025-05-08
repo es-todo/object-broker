@@ -97,6 +97,30 @@ server.on("connection", (conn: engine.Socket) => {
             },
           });
         }
+        case "sign_in": {
+          const { email, password } = message;
+          function err(reason: string) {
+            console.error(`error loggin in ${email}: ${reason}`);
+            session?.auth_error();
+          }
+          object_channel_manager.fetch_once("email", email, (email_data) => {
+            if (!email_data) return err("no email");
+            const user_id = email_data.user_id;
+            console.log({ user_id });
+            object_channel_manager.fetch_once(
+              "credentials",
+              user_id,
+              (cred_data) => {
+                if (!cred_data) return err("no credentials");
+                const hashed = cred_data.password;
+                if (!verify_password(password, hashed))
+                  return err("invalid password");
+                session?.set_credentials({ user_id, password });
+              }
+            );
+          });
+          return;
+        }
         case "fetch": {
           console.log(message);
           const { object_type, object_id } = message;

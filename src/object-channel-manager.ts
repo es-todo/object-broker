@@ -66,4 +66,12 @@ export class ObjectChannelManager {
     }
     return channel;
   }
+
+  public fetch_once(type: string, id: string, f: (data: any) => void) {
+    const chan = this.get_channel(type, id);
+    const unsubscribe = chan.subscribe((t, i, data) => {
+      unsubscribe();
+      f(data);
+    });
+  }
 }

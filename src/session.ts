@@ -16,6 +16,7 @@ type message =
       rev: { t: number; i: number; type: string; id: string; data: any };
     }
   | { type: "auth"; user_id: string }
+  | { type: "auth_error" }
   | { type: "syn"; i: number };
 
 export class Session {
@@ -108,5 +109,10 @@ export class Session {
   public set_credentials(credentials: credentials) {
     this.credentials = credentials;
     this.send({ type: "auth", user_id: credentials.user_id });
+  }
+
+  public auth_error() {
+    this.credentials = undefined;
+    this.send({ type: "auth_error" });
   }
 }
