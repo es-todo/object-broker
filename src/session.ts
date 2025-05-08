@@ -115,4 +115,8 @@ export class Session {
     this.credentials = undefined;
     this.send({ type: "auth_error" });
   }
+
+  public get_credentials() {
+    return this.credentials;
+  }
 }

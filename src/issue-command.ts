@@ -1,10 +1,15 @@
 import axios from "axios";
 import { sleep } from "./sleep.ts";
 
+type command_auth =
+  | { authenticated: false }
+  | { authenticated: true; user_id: string; signature: string };
+
 type command_payload = {
   command_uuid: string;
   command_type: string;
   command_data: any;
+  command_auth: command_auth;
 };
 
 export async function issue_command(payload: command_payload) {

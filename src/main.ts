@@ -10,7 +10,6 @@ import { readFileSync } from "node:fs";
 import { gen_password, verify_password } from "./crypto.ts";
 
 const sign = create_sign(readFileSync("private.pem", { encoding: "utf8" }));
-console.log(sign("hello"));
 
 const server = engine.listen(3000, {}, () => {
   console.log("engine listening on 3000");
@@ -70,7 +69,19 @@ server.on("connection", (conn: engine.Socket) => {
           command_channel.add_subscriber((d) =>
             session?.notify_command_status(d)
           );
-          issue_command({ command_uuid, command_type, command_data });
+          const credentials = session.get_credentials();
+          issue_command({
+            command_uuid,
+            command_type,
+            command_data,
+            command_auth: credentials
+              ? {
+                  authenticated: true,
+                  user_id: credentials.user_id,
+                  signature: sign(`${command_uuid}:${credentials.user_id}`),
+                }
+              : { authenticated: false },
+          });
           return;
         }
         case "register": {
@@ -95,6 +106,7 @@ server.on("connection", (conn: engine.Socket) => {
               email,
               password: gen_password(password),
             },
+            command_auth: { authenticated: false },
           });
         }
         case "sign_in": {
