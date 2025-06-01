@@ -85,15 +85,19 @@ server.on("connection", (conn: engine.Socket) => {
           return;
         }
         case "register": {
-          const { command_uuid, user_id, email, password } = message;
+          const { command_uuid, user_id, username, realname, email, password } =
+            message;
           assert(typeof command_uuid === "string");
           assert(typeof user_id === "string");
+          assert(typeof username === "string");
+          assert(typeof realname === "string");
           assert(typeof password === "string");
           const command_channel =
             command_channel_manager.get_command_channel_by_id(command_uuid);
           assert(session !== undefined);
           command_channel.add_subscriber((status) => {
             session?.notify_command_status(status);
+            console.log({ status });
             if (status.type === "succeeded") {
               session?.set_credentials({ user_id, password });
             }
@@ -103,21 +107,24 @@ server.on("connection", (conn: engine.Socket) => {
             command_type: "register",
             command_data: {
               user_id,
+              username,
+              realname,
               email,
               password: gen_password(password),
             },
             command_auth: { authenticated: false },
           });
+          return;
         }
         case "sign_in": {
-          const { email, password } = message;
+          const { username, password } = message;
           function err(reason: string) {
-            console.error(`error loggin in ${email}: ${reason}`);
+            console.error(`error loggin in ${username}: ${reason}`);
             session?.auth_error();
           }
-          object_channel_manager.fetch_once("email", email, (email_data) => {
-            if (!email_data) return err("no email");
-            const user_id = email_data.user_id;
+          object_channel_manager.fetch_once("username", username, (data) => {
+            if (!data) return err("invalid username");
+            const user_id = data.user_id;
             console.log({ user_id });
             object_channel_manager.fetch_once(
               "credentials",
