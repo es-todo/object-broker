@@ -17,6 +17,7 @@ type message =
     }
   | { type: "auth"; user_id: string }
   | { type: "auth_error" }
+  | { type: "signed_out" }
   | { type: "syn"; i: number };
 
 export class Session {
@@ -114,6 +115,11 @@ export class Session {
   public auth_error() {
     this.credentials = undefined;
     this.send({ type: "auth_error" });
+  }
+
+  public sign_out() {
+    this.credentials = undefined;
+    this.send({ type: "signed_out" });
   }
 
   public get_credentials() {

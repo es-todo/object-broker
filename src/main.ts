@@ -140,6 +140,10 @@ server.on("connection", (conn: engine.Socket) => {
           });
           return;
         }
+        case "sign_out": {
+          session?.sign_out();
+          return;
+        }
         case "fetch": {
           console.log(message);
           const { object_type, object_id } = message;
