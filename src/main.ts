@@ -116,6 +116,48 @@ server.on("connection", (conn: engine.Socket) => {
           });
           return;
         }
+        case "reset_password": {
+          const { command_uuid, code, password } = message;
+          function err(reason: string) {
+            console.error(`error resetting code ${code}: ${reason}`);
+            session?.auth_error();
+          }
+          assert(typeof command_uuid === "string");
+          assert(typeof password === "string");
+          const command_channel =
+            command_channel_manager.get_command_channel_by_id(command_uuid);
+          assert(session !== undefined);
+          object_channel_manager.fetch_once(
+            "password_reset_code",
+            code,
+            (data) => {
+              if (!data) return err("invalid_code");
+              const { user_id, used } = data;
+              assert(typeof user_id === "string");
+              assert(typeof used === "boolean");
+              if (used) return err("code_is_used");
+              command_channel.add_subscriber((status) => {
+                session?.notify_command_status(status);
+                console.log({ status });
+                if (status.type === "succeeded") {
+                  session?.set_credentials({ user_id, password });
+                } else if (status.type === "failed") {
+                  err("command_failed");
+                }
+              });
+              issue_command({
+                command_uuid,
+                command_type: "reset_password_with_code",
+                command_data: {
+                  code,
+                  new_password: gen_password(password),
+                },
+                command_auth: { authenticated: false },
+              });
+            }
+          );
+          return;
+        }
         case "sign_in": {
           const { username, password } = message;
           function err(reason: string) {
