@@ -159,15 +159,12 @@ server.on("connection", (conn: engine.Socket) => {
           return;
         }
         case "sign_in": {
-          const { username, password } = message;
+          const { username, user_id, password } = message;
           function err(reason: string) {
             console.error(`error loggin in ${username}: ${reason}`);
             session?.auth_error();
           }
-          object_channel_manager.fetch_once("username", username, (data) => {
-            if (!data) return err("invalid username");
-            const user_id = data.user_id;
-            console.log({ user_id });
+          function do_auth(user_id: string) {
             object_channel_manager.fetch_once(
               "credentials",
               user_id,
@@ -179,7 +176,20 @@ server.on("connection", (conn: engine.Socket) => {
                 session?.set_credentials({ user_id, password });
               }
             );
-          });
+          }
+          if (user_id && !username) {
+            do_auth(user_id);
+          } else if (username && !user_id) {
+            object_channel_manager.fetch_once("username", username, (data) => {
+              if (!data) return err("invalid username");
+              const user_id = data.user_id;
+              if (!user_id)
+                throw new Error("BUG no user_id in username object");
+              do_auth(user_id);
+            });
+          } else {
+            err("login_not_provided");
+          }
           return;
         }
         case "sign_out": {
