@@ -83,7 +83,7 @@ export class Session {
 
   public connection_closed(now: number) {
     assert(this.connection);
-    assert(this.closed === undefined);
+    if (this.closed) return;
     this.closed = now;
   }
 
