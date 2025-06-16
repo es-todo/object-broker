@@ -6,7 +6,8 @@ export function gen_password(password: string) {
   return `${salt}$${derived}`;
 }
 
-export function verify_password(password: string, hashed: string) {
+export function verify_password(password: string, hashed: string | null) {
+  if (!hashed) return false;
   const [salt, pass_str] = hashed.split("$");
   const derived = sha256(`${salt}$${password}`);
   return derived === pass_str;
